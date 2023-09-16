@@ -1,17 +1,15 @@
-# Import the Open-CV extra functionalities
+"""Run an object detection model on a live feed."""
+from pathlib import Path
+
 import cv2
 
-# This is to pull the information about what each object is called
-classNames = []
-classFile = "/home/santiago/Downloads/Object_Detection_Files/coco.names"
-with open(classFile, "rt") as f:
+DATA_DIR = Path(__file__).parent / "Object_Detection_Files"
+
+with open(DATA_DIR / "coco.names", "rt") as f:
     classNames = f.read().rstrip("\n").split("\n")
 
-# This is to pull the information about what each object should look like
-configPath = "/home/santiago/Downloads/Object_Detection_Files/ssd_mobilenet_v3_large_coco_2020_01_14.pbtxt"
-weightsPath = (
-    "/home/santiago/Downloads/Object_Detection_Files/frozen_inference_graph.pb"
-)
+configPath = DATA_DIR / "ssd_mobilenet_v3_large_coco_2020_01_14.pbtxt"
+weightsPath = DATA_DIR / "frozen_inference_graph.pb"
 
 # This is some set up values to get good results
 net = cv2.dnn_DetectionModel(weightsPath, configPath)
@@ -24,6 +22,7 @@ net.setInputSwapRB(True)
 # This is to set up what the drawn box size/colour is and the font/size/colour
 # of the name tag and confidence label
 def getObjects(img, thres, nms, draw=True, objects=[]):
+    """Detect objects in an image and draw them."""
     classIds, confs, bbox = net.detect(
         img, confThreshold=thres, nmsThreshold=nms
     )

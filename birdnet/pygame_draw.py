@@ -10,12 +10,12 @@ from matplotlib.cm import get_cmap
 from record import RATE
 
 EMPTY = pygame.Color(0, 0, 0, 0)
-FONT_SIZE = 40
-BAR_SIZE = 400
+FONT_SIZE = 100
+BAR_SIZE = 800
 SPEC_CMAP = "cividis"
 PROBABILITY_CMAP = "magma"
 SPEC_SHAPE = (259, 128)
-DETECTIONS_SHAPE = (800, 600)
+DETECTIONS_SHAPE = (1800, 1200)
 BLACK = (255, 255, 255)
 CONFIDENCE_THRESHOLD = 0.3
 REF = 700
@@ -159,7 +159,7 @@ def run_pygame(q: Queue):
     """Run pygame visualization."""
     # Initialize pygame
     pygame.init()
-    screen = pygame.display.set_mode((1280, 720))
+    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 
     fps = FPS()
 

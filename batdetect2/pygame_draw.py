@@ -6,8 +6,25 @@ import librosa
 import numpy as np
 import pygame
 from matplotlib.cm import get_cmap
+from record import DURATION, RATE
 
-from record import RATE
+from batdetect2.detector.parameters import TARGET_SAMPLERATE_HZ
+
+
+def convert_time_to_pixels(time, width):
+    """Convert time in seconds to pixels."""
+    target_duration = DURATION * RATE / TARGET_SAMPLERATE_HZ
+    return int(time * width / target_duration)
+
+
+def convert_frequency_to_pixels(freq, height):
+    """Convert frequency in Hz to pixels."""
+    nyquist = RATE / 2
+    audio_freq = freq * RATE / TARGET_SAMPLERATE_HZ
+    max = librosa.hz_to_mel(nyquist)
+    mel = librosa.hz_to_mel(audio_freq)
+    return int((mel / max) * height)
+
 
 EMPTY = pygame.Color(0, 0, 0, 0)
 FONT_SIZE = 40
@@ -15,8 +32,8 @@ BAR_SIZE = 400
 SPEC_CMAP = "cividis"
 PROBABILITY_CMAP = "magma"
 SPEC_SHAPE = (259, 128)
-DETECTIONS_SHAPE = (800, 600)
-BLACK = (255, 255, 255)
+
+TEXT_COLOR = (255, 255, 255)
 CONFIDENCE_THRESHOLD = 0.3
 REF = 700
 
@@ -31,7 +48,7 @@ class FPS:
         self.text = self.font.render(
             str(self.clock.get_fps()),
             True,
-            BLACK,
+            TEXT_COLOR,
         )
 
     def render(self, display):
@@ -39,7 +56,7 @@ class FPS:
         self.text = self.font.render(
             str(round(self.clock.get_fps(), 2)),
             True,
-            BLACK,
+            TEXT_COLOR,
         )
         display.blit(self.text, (4, 4))
 
@@ -71,37 +88,9 @@ class Spectrogram:
         display.blit(image, (0, 0))
 
 
-class MovingAverage:
-    """Class to compute moving average of detections."""
-
-    def __init__(self, alpha=0.5):
-        """Initialize MovingAverage class."""
-        self._dict = {}
-        self.alpha = alpha
-
-    def update(self, detections):
-        """Update moving average with new detections."""
-        updated_names = set()
-
-        # Update new detections
-        for detection in detections:
-            class_name = detection["class"]
-            probability = detection["det_prob"]
-            self._dict[class_name] = self._dict.get(
-                class_name, 0
-            ) * self.alpha + probability * (1 - self.alpha)
-            updated_names.add(class_name)
-
-        # Decay old detections
-        for class_name in set(self._dict.keys()) - updated_names:
-            self._dict[class_name] = self._dict[class_name] * self.alpha
-
-        # Remove detections with low probability
-        self._dict = {key: value for key, value in self._dict.items() if value > 0.01}
-
-    def get(self):
-        """Return sorted list of detections."""
-        return sorted(self._dict.items(), key=lambda x: x[1], reverse=True)
+def array_to_color(array):
+    """Convert array to color."""
+    return (255 * np.array(array)).astype(np.uint8)
 
 
 class Detections:
@@ -109,50 +98,63 @@ class Detections:
 
     def __init__(
         self,
-        shape,
         cmap,
         padding=4,
         font_size=FONT_SIZE,
-        bar_width=BAR_SIZE,
     ):
         """Initialize Detections class."""
-        self.shape = shape
         self.cmap = cmap
-        self.surface = pygame.Surface(shape, pygame.SRCALPHA)
-        self.mavg = MovingAverage()
         self.font = pygame.font.SysFont("Verdana", font_size)
         self.padding = padding
-        self.bar_width = bar_width
 
     def render(self, detections, display):
         """Render detections on screen."""
-        self.mavg.update(detections)
-        detections = self.mavg.get()
+        width = display.get_width()
+        height = display.get_height()
 
-        self.surface.fill(EMPTY)
-
-        y = self.padding
-        for class_name, probability in detections:
-            if probability < CONFIDENCE_THRESHOLD:
-                break
-
-            color = (255 * np.array(self.cmap(probability))).astype(np.uint8)
-            text = self.font.render(
-                f"{class_name}: {probability:.2f}",
-                True,
-                BLACK,
+        for detection in detections:
+            x_start = convert_time_to_pixels(detection["start_time"], width)
+            x_end = convert_time_to_pixels(detection["end_time"], width)
+            y_low = convert_frequency_to_pixels(detection["low_freq"], height)
+            y_high = convert_frequency_to_pixels(
+                detection["high_freq"], height
             )
-
-            height = text.get_height()
+            color = array_to_color(self.cmap(detection["det_prob"]))
             pygame.draw.rect(
-                self.surface,
+                display,
                 color,  # type: ignore
-                (0, y, int(self.bar_width * probability), height + 8),
+                (
+                    x_start,
+                    height - y_high,
+                    x_end - x_start,
+                    y_high - y_low,
+                ),
+                1,
             )
-            self.surface.blit(text, (self.padding, y + self.padding))
-            y = y + text.get_height() + 3 * self.padding
 
-        display.blit(self.surface, (0, 0))
+            class_text = self.font.render(
+                detection["class"],
+                True,
+                color,  # type: ignore
+            )
+            text_height = class_text.get_height()
+            display.blit(
+                class_text,
+                (
+                    x_start + self.padding,
+                    height - y_high - text_height - self.padding,
+                ),
+            )
+
+            prob_text = self.font.render(
+                f"{detection['det_prob']:.2f}",
+                True,
+                color,  # type: ignore
+            )
+            display.blit(
+                prob_text,
+                (x_start + self.padding, height - y_low + self.padding),
+            )
 
 
 def run_pygame(q: Queue):
@@ -165,7 +167,7 @@ def run_pygame(q: Queue):
 
     spec = Spectrogram(SPEC_SHAPE, cmap=get_cmap(SPEC_CMAP))
 
-    detections = Detections(DETECTIONS_SHAPE, cmap=get_cmap(PROBABILITY_CMAP))
+    detections = Detections(cmap=get_cmap(PROBABILITY_CMAP))
 
     # Main loop
     running = True
@@ -187,9 +189,6 @@ def run_pygame(q: Queue):
 
             # Draw detections
             detections.render(dets, screen)
-
-            # Draw FPS
-            # fps.render(screen)
 
             pygame.display.flip()
         except Empty:

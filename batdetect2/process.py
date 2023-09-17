@@ -2,6 +2,9 @@
 from multiprocessing import Queue
 
 import numpy as np
+from record import DELAY, RATE
+
+delay_samples = int(DELAY * RATE)
 
 
 def process_audio(input_queue: Queue, ouput_queue: Queue):
@@ -11,7 +14,9 @@ def process_audio(input_queue: Queue, ouput_queue: Queue):
     config = api.get_config(detection_threshold=0.5)
 
     while True:
-        audio = input_queue.get()
-        audio = audio.astype(np.float32) / np.iinfo(np.int16).max
+        audio, time_info = input_queue.get()
+        audio = (
+            audio[delay_samples:].astype(np.float32) / np.iinfo(np.int16).max
+        )
         detections, _, _ = api.process_audio(audio, config=config)
-        ouput_queue.put([audio, detections])
+        ouput_queue.put([detections, time_info])

@@ -5,9 +5,11 @@ import numpy as np
 from birdnetlib import RecordingBuffer
 from birdnetlib.analyzer import Analyzer
 
-from record import RATE
+from record import DELAY, RATE
 
 MIN_CONF = 0.25
+
+delay_length = int(RATE * DELAY)
 
 
 def process(audio: np.ndarray, analyzer: Analyzer):
@@ -15,7 +17,7 @@ def process(audio: np.ndarray, analyzer: Analyzer):
 
     Will analyze it using the birdnetlib analyzer.
     """
-    audio = audio.astype(np.float32) / np.iinfo(np.int16).max
+    audio = audio[delay_length:].astype(np.float32) / np.iinfo(np.int16).max
     recording = RecordingBuffer(
         analyzer,
         audio,
@@ -23,7 +25,7 @@ def process(audio: np.ndarray, analyzer: Analyzer):
         min_conf=MIN_CONF,
     )
     recording.analyze()
-    return audio, recording.detections
+    return recording.detections
 
 
 def process_audio(input_queue: Queue, ouput_queue: Queue):
@@ -31,6 +33,6 @@ def process_audio(input_queue: Queue, ouput_queue: Queue):
     analyzer = Analyzer()
 
     while True:
-        audio = input_queue.get()
-        audio, detections = process(audio, analyzer)
-        ouput_queue.put([audio, detections])
+        audio, time_info = input_queue.get()
+        detections = process(audio, analyzer)
+        ouput_queue.put([detections, time_info])

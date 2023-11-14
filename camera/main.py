@@ -12,7 +12,7 @@ configPath = DATA_DIR / "ssd_mobilenet_v3_large_coco_2020_01_14.pbtxt"
 weightsPath = DATA_DIR / "frozen_inference_graph.pb"
 
 # This is some set up values to get good results
-net = cv2.dnn_DetectionModel(weightsPath, configPath)
+net = cv2.dnn_DetectionModel(str(weightsPath), str(configPath))
 net.setInputSize(320, 320)
 net.setInputScale(1.0 / 127.5)
 net.setInputMean((127.5, 127.5, 127.5))
@@ -23,9 +23,7 @@ net.setInputSwapRB(True)
 # of the name tag and confidence label
 def getObjects(img, thres, nms, draw=True, objects=[]):
     """Detect objects in an image and draw them."""
-    classIds, confs, bbox = net.detect(
-        img, confThreshold=thres, nmsThreshold=nms
-    )
+    classIds, confs, bbox = net.detect(img, confThreshold=thres, nmsThreshold=nms)
     # Below has been commented out, if you want to print each sighting of an
     # object to the console you can uncomment below print(classIds,bbox)
     if len(objects) == 0:
@@ -35,9 +33,7 @@ def getObjects(img, thres, nms, draw=True, objects=[]):
         return img, []
 
     objectInfo = []
-    for classId, confidence, box in zip(
-        classIds.flatten(), confs.flatten(), bbox
-    ):
+    for classId, confidence, box in zip(classIds.flatten(), confs.flatten(), bbox):
         className = classNames[classId - 1]
         if className not in objects:
             continue
@@ -72,7 +68,7 @@ def getObjects(img, thres, nms, draw=True, objects=[]):
 # Below determines the size of the live feed window that will be displayed on
 # the Raspberry Pi OS
 if __name__ == "__main__":
-    cap = cv2.VideoCapture(4)
+    cap = cv2.VideoCapture(0)
     cap.set(3, 640)
     cap.set(4, 480)
     # cap.set(10,70)
@@ -95,6 +91,8 @@ if __name__ == "__main__":
         result, objectInfo = getObjects(img, 0.45, 0.2)
 
         cv2.imshow(window_name, img)
-        cv2.waitKey(1)
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
 
     cv2.destroyAllWindows()

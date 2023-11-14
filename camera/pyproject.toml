@@ -1,0 +1,18 @@
+[project]
+name = "Live-Object-Detection"
+version = "0.1"
+description = "Live Object Detection using OpenCV and MobileNet SSD v3"
+authors = [
+    {name = "Santiago Martinez", email = "santiago.mbal@gmail.com"},
+]
+dependencies = [
+    "opencv-python>=4.8.1.78",
+]
+requires-python = ">=3.9,<3.11"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[build-system]
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"

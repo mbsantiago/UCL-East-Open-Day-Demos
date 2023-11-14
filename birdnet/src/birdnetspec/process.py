@@ -5,7 +5,7 @@ import numpy as np
 from birdnetlib import RecordingBuffer
 from birdnetlib.analyzer import Analyzer
 
-from record import DELAY, RATE
+from .record import DELAY, RATE
 
 MIN_CONF = 0.25
 

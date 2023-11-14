@@ -1,2 +1,5 @@
 
 birdnet/__pycache__
+birdnet/src/birdnetspec/__pycache__
+birdnet/src/birnet_live_spec.egg-info
+birdnet/.pdm-python

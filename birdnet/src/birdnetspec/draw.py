@@ -1,14 +1,14 @@
 """Pygame visualization for audio and detections."""
+from datetime import datetime
 from multiprocessing import Queue
 from queue import Empty
-from datetime import datetime
 
 import librosa
 import numpy as np
 import pygame
 from matplotlib.cm import get_cmap
 
-from record import RATE, DELAY
+from .record import DELAY, RATE
 
 EMPTY = pygame.Color(0, 0, 0, 0)
 FONT_SIZE = 100
@@ -169,7 +169,7 @@ def run_pygame(detections_queue: Queue, audio_queue: Queue):
     """Run pygame visualization."""
     # Initialize pygame
     pygame.init()
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+    screen = pygame.display.set_mode((1200, 800))
 
     fps = FPS()
 

@@ -1,9 +1,9 @@
 """Real time audio display and analysis."""
 from multiprocessing import Process, Queue
 
-from process import process_audio
-from draw import run_pygame
-from record import record
+from .process import process_audio
+from .draw import run_pygame
+from .record import record
 
 
 def main():

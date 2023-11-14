@@ -1,7 +1,7 @@
 [project]
-name = ""
-version = ""
-description = ""
+name = "birnet-live-spec"
+version = "0.1"
+description = "A simple live spectrogram running BirdNET on the fly"
 authors = [
     {name = "Santiago Martinez", email = "santiago.mbal@gmail.com"},
 ]
@@ -11,8 +11,10 @@ dependencies = [
     "librosa>=0.10.1",
     "scipy>=1.9.3",
     "pyaudio>=0.2.13",
+    "tensorflow>=2.14.0",
+    "pygame>=2.5.2",
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.9,<3.11"
 readme = "README.md"
 license = {text = "MIT"}
 
